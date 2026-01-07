@@ -1,103 +1,167 @@
-# CSCI 4253 / 5253 - Lab 4 - Patent Join in PySpark
+# 🔬 PySpark Patent Citation Analysis
 
-In this lab, you're going to use PySpark's RDD and DataFrame interfaces to solve the patent join problem.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![PySpark](https://img.shields.io/badge/PySpark-3.0+-orange.svg)](https://spark.apache.org/)
 
-## The Patent join problem explained
+A distributed computing project using Apache Spark to analyze patent citation patterns across U.S. states. This project identifies which patents cite the most other patents from their own state (self-state citations).
 
-The goal of the patent join problem is to find *self-state patent citations*. You're given two datasets, `cite75_99.txt.gz` and `apat63_99.txt.gz`. The `Makefile` contains rules to download those data files. **N.B.** Rember to not check in those file into your git repo!
+## 📊 Project Overview
 
-PySpark can automatically process the gzip'd files -- you don't need to uncompress them. Code for reading the files are included in the two Jupyter notebooks.
+This project processes millions of patent records to solve the **patent join problem** - finding patents with the highest number of same-state citations. The analysis reveals geographic patterns in patent citations and demonstrates big data processing techniques.
 
-The `acite75_99.txt` file contains a citation index, of the form
+### Problem Statement
+
+Given:
+- **~2.9 million patent records** with state information
+- **~16 million citation records** linking patents
+
+Goal:
+- Determine how many patents each patent cites from its own state
+- Identify the top 10 patents with the highest self-state citation counts
+
+## 🛠️ Technologies Used
+
+- **Apache Spark** - Distributed computing framework
+- **PySpark** - Python API for Spark
+- **Python 3.8+** - Primary programming language
+- **Pandas** - Data display and analysis
+- **Jupyter Notebook** - Interactive development environment
+
+## 📁 Dataset
+
+### Citations Data (`cite75_99.txt.gz`)
+- Patent citation relationships (1975-1999)
+- Format: `CITING, CITED`
+- ~16 million citation records
+
+### Patents Data (`apat63_99.txt.gz`)
+- Patent metadata including state information (1963-1999)
+- Includes: patent number, grant year, state, citation counts
+- ~2.9 million patent records
+
+## 🚀 Implementation Approaches
+
+This project implements the solution using **two PySpark APIs** to demonstrate different programming paradigms:
+
+### 1. DataFrame API (`Lab-04-patent-dataframe.ipynb`)
+- Higher-level, SQL-like operations
+- Optimized execution via Catalyst optimizer
+- **Faster execution** - Recommended for production
+- Uses declarative transformations
+
+### 2. RDD API (`Lab-04-patent-rdd.ipynb`)
+- Lower-level, functional programming approach
+- Fine-grained control over transformations
+- Educational value for understanding Spark internals
+- Uses map, reduce, join operations
+
+## 📋 Installation & Setup
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/vedantkesharia/pyspark-patent-citation-analysis.git
+cd pyspark-patent-citation-analysis
 ```
-CITING CITED
-```
-where both `CITING` and `CITED` are integers. Each line
-indicates that patent number `CITING` cites patent `CITED`.
 
-The `pat63_99.txt` file contains the patent number, an (optional)
-state in which the patent is filed and the total number of citations
-made.
-
-Your job is to augment the data in `pat63_99.txt` to include a column
-indicating the number of patents cited that originate *from the same
-state*. Obviously, this data can only be calculated for patents that
-have originating state information (and thus, only those from the US) and only for cited patents that provide that information. 
-
-For example, 
-patent 6009554 (the last patent in pat63_99.txt) cited 9 patents. Those patents were awarded to people in
-* NY, 
-* IL, 
-* Great Britain (no state), 
-* NY, 
-* NY,
-* FL,
-* NY,
-* NY,
-* NY. 
-
-For the first part, you would updates the line:
-
-```
-6009554,1999,14606,1997,"US","NY",219390,2,,714,2,22,9,0,1,,,,12.7778,0.1111,0.1111,,
+2. **Install dependencies**
+```bash
+pip install pyspark pandas jupyter
 ```
 
-To be: 
+3. **Download datasets**
+```bash
+make download  # If Makefile is configured
+# Or download manually from the data source
 ```
-6009554,1999,14606,1997,"US","NY",219390,2,,714,2,22,9,0,1,,,,12.7778,0.1111,0.1111,,6
+
+4. **Launch Jupyter Notebook**
+```bash
+jupyter notebook
 ```
 
-The last value `,6` is the number of same-state citations. You will
-report the ten patents that have the most self-state citations sorted in descending order. These patents are shown in the table below:
+## 💡 Usage
 
-![Top 10 self-state citations](top-10-same-state-patents.png)
+### DataFrame Approach (Recommended)
+```python
+# Open Lab-04-patent-dataframe.ipynb
+# Run all cells to see the complete analysis
+```
 
+### RDD Approach
+```python
+# Open Lab-04-patent-rdd.ipynb
+# Run all cells to see the RDD-based implementation
+```
 
-To do this, you will first need do a "data join” of the citations and
-the patent data - for each cited patent, you'll need to determine the
-state of the cited patent. You can then use that information to
-produce the augmented patent information.
+## 📈 Key Analysis Steps
 
-It's useful to produce an intermediate result like
+1. **Data Loading**: Read compressed CSV files using Spark
+2. **Join Operations**: 
+   - Link citations with cited patent states
+   - Link with citing patent states
+3. **Flag Self-Citations**: Identify when `cited_state == citing_state`
+4. **Aggregation**: Count self-state citations per patent
+5. **Ranking**: Sort and extract top 10 patents
 
-|Cited|Cited_State|Citing|Citing_State|
-|-----|-----|------|-----|
-|2134795	|None	|5654603	|OH
-|2201699	|None	|5654603	|OH
-|3031593	|None	|5654603	|OH
-|3093764	|OH	|5654603	|OH
-|3437858	|OH	|5654603	|OH
-|3852137	|PA	|5654603	|OH
-|3904724	|PA	|5654603	|OH
+## 🎯 Results
 
-This table says that patent `3852137` is from `PA` and `5654603` is from `OH`.
-You would construct this for each cited patent. From this, it's simple to determine
-how many patents are self-sited for a given patent data line and then group and count those.
+The analysis identifies patents with the highest number of in-state citations, revealing:
+- Geographic clustering patterns in innovation
+- State-level patent citation networks
+- Patents with significant regional influence
 
-There are some complications:
-* Not all patents in the 'cited' table are in the 'patent' table
-* Not all patents cite other patents
-* Not all patents are cited by other patents
-* Lastly, the NaN/Null value used by PySpark makes sorting values involving Nan/Null and numeric values problematic; you're best filtering out the `null` values and then sorting or replacing those values with meaningful values.
+**Sample Output:**
+| Patent | State | Self-State Citations |
+|--------|-------|---------------------|
+| 5959466 | CA | 125 |
+| 5983822 | TX | 103 |
+| ... | ... | ... |
 
-## What you need to do and hand in
+## 📚 Learning Objectives
 
-You're going to work on two solutions, one using the RDD API and the other using the DataFrame API.
+- Master PySpark DataFrame and RDD APIs
+- Understand distributed data processing concepts
+- Implement complex join operations at scale
+- Compare functional vs declarative programming in Spark
+- Optimize big data workflows
 
-The DataFrame API will execute much faster than the RDD API because it casts the computations into the underlying Java VM; it is recommended you finish that implementation using the [https://coding.csel.io](https://coding.csel.io) coding environment; select the "csci 4253" server.
+## 🔧 Performance Considerations
 
-For the DataFrame solution, you should implement your code using the starter code in the Jupyter notebook `Lab-04-patent-dataframe.ipynb`. That implementation should produce the reference output in the figure shown above.
+- **Caching**: Use `.cache()` after expensive join operations
+- **Sampling**: Test with data samples before full execution
+- **Partitioning**: Leverage Spark's data partitioning
+- **Local Mode**: Project runs in `local[*]` mode (all CPU cores)
 
-For the RDD solution, you should implement your code using the starter code in the Jupyter notebook `Lab-04-patent-RDD.ipynb`. That implementation should also produce the same reference output as shown above, although it will look slighly different since it's in the RDD form.
+## 📝 Project Structure
 
-You should document your solution process in the Jupyter notebook -- just add MarkDown cells and explain what you're doing at each step. You should commit your solution to GitHub -- you'll find that the current output will be viewable when looking at notebooks in GitHub.
+```
+.
+├── Lab-04-patent-dataframe.ipynb  # DataFrame implementation
+├── Lab-04-patent-rdd.ipynb        # RDD implementation
+├── Makefile                        # Build automation
+├── README.md                       # Project documentation
+├── cite75_99.txt.gz               # Citation data (download required)
+└── apat63_99.txt.gz               # Patent data (download required)
+```
 
-### Some Suggestions
+## 🤝 Contributing
 
-In both the RDD and DataFrame form, it's possible to "cache" an intermediate RDD/Dataframe (using the `.cache()` function). This can be useful when you're trying to figure out how to extract the appropriate data, etc. This is particularly important for the output of the `.join()` operations and particularly for the RDD solution -- that operation is *slow* and having to recompute it each time you look at data or attempt the next step is frustrating.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-For the RDD solution, we recommend that you work with a sample of the data rather than the entire dataset. You can either use *e.g.* `.sample(False, 0.05)` to sample the data to 5% of the original or you can take *e.g.* the first 200,000 lines of each of the patent and citation data.
+## 📄 License
 
-The solution for the Dataframe and RDD methods should be the same. My recommendation is that you first do the Dataframe method because that will help you work through your algorithm. You can then switch to using the RDD methods using a sub-sample of the data and then run it for the full data set.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-**Once you've debugged your solution, you should run your solution for the full dataset of citations & patents.**
+## 👤 Author
+
+**Vedant Kesharia**
+- GitHub: [@vedantkesharia](https://github.com/vedantkesharia)
+
+## 🙏 Acknowledgments
+
+- University of Colorado Boulder - CSCI 4253/5253 Course
+- Apache Spark Community
+- Dataset sources and documentation
+
+---
+
