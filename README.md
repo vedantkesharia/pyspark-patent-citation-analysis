@@ -144,15 +144,8 @@ The analysis identifies patents with the highest number of in-state citations, r
 └── apat63_99.txt.gz               # Patent data (download required)
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 
-## 👤 Author
-
-**Vedant Kesharia**
-- GitHub: [@vedantkesharia](https://github.com/vedantkesharia)
 
 ## 🙏 Acknowledgments
 
